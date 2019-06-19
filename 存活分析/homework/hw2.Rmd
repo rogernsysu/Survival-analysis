@@ -1,0 +1,110 @@
+---
+title: "存活分析 作業2"
+author: "孫浩哲 M072040002"
+date: "2019年5月23日"
+output: word_document
+---
+##1.
+
+#(1)
+```{r}
+require(KMsurv)
+require(survival)
+require(dplyr)
+require(survminer)
+data(bmt)
+fitmo=survfit(Surv(t2,d3)~factor(group),data=bmt)
+plot(fitmo,col=c("red","gold","green"),xlab="time",ylab="K-M survival function")
+legend("topright", legend = c("all", "low-risk", "high-risk"),col=c("red","gold","green"),text.col=c("red","gold","green"))
+```
+
+The disease-free survival functions for the three populations are not same.
+
+#(2)
+
+$H_{0}$：All hazard functions are same. $H_{a}$：At least one hazard is different.
+
+```{r}
+fitt=survdiff(Surv(t2,d3)~factor(group),data=bmt)
+fitt
+```
+
+We reject the $H_{0}$, that is, at least one hazard is different.
+
+#(3)
+
+```{r}
+fit3=survdiff(Surv(t2,d3)~factor(group),data=bmt,rho=1)
+fit3
+```
+Under $\alpha=0.05$, the test statistic is $13.8$ and the rejection  region is  $\chi_{2}^2=5.99146$ .¶
+
+Since $13.8≥χ22=5.99146$, we reject the null hypothesis.
+
+##2.
+
+#(1)
+```{r}
+data(bfeed)
+fit_model = coxph(Surv(duration,delta)~yschool+factor(poverty)+factor(race),data=bfeed)
+fit_model %>% coef
+fit_model %>% confint(level=0.99)
+```
+
+#(2)
+
+The risk will decrease $e^{0.05}\approx0.951$ years if the mother's years of school increases one year.
+
+#(3)
+
+```{r}
+summary(fit_model)->summ
+summ$coefficients
+exp(confint(fit_model,level=0.99))
+```
+The RR is $0.8262$ and the 99%CI is $[0.652,1.048]$.
+
+#(4)
+
+```{r}
+fit_model$var
+sd = sqrt(0.0106+0.0089-2*0.0017) # Var(X-Y) = Var(X)+Var(Y)-2Cov(X,Y)
+ans = 0.1322-0.2286+c(-qnorm(0.995),qnorm(0.995))*sd
+ans %>% exp
+```
+
+By the result we get in (3), the RR $1.1413305/1.2568691\approx0.91$.
+
+The CI of RR is $[0.655,1.259]$
+
+#(5)
+
+$H_{0}$：all coefficients of race are 0 $H_{a}$：at least one of coefficient of race are not 0.
+
+rejection region: ${\chi^2_{SC}>5.99}$ 
+
+```{r}
+##wald test
+beta1hat=fit_model$coefficients[3:4]
+var11=fit_model$var[3:4,3:4]
+chi=(beta1hat %>% t)%*%solve(var11)%*% beta1hat # test-statistic
+1-pchisq(chi,2) #chi-square distribution with df 2
+```
+
+```{r}
+##likelihood ratio test
+fit_model.reduced=coxph(Surv(duration,delta)~yschool+factor(poverty),data=bfeed)
+LR=2*(fit_model$loglik[2]-fit_model.reduced$loglik[2]) # test-statistic
+1-pchisq(LR,2) #chi-square distribution with df 2
+```
+
+```{r}
+##score test
+fit0=coxph(Surv(duration,delta)~yschool+factor(poverty)+factor(race),data=bfeed,init=c(fit_model.reduced$coefficients,0,0),iter=0)
+score.vector=colSums(coxph.detail(fit0)$score)
+chiSC=t(score.vector[3:4]%*%fit0$var[3:4,3:4]%*%score.vector[3:4]) 
+# test-statistic
+1-pchisq(chiSC,2) #chi-square distribution with df 2
+qchisq(0.95,2)
+```
+No matter Wald test, likelihood ratio test and score test, we can reject the $H_{0}$, that is, we accept at least one of coefficient of race are not 0.

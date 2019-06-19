@@ -1,0 +1,68 @@
+---
+title: "存活作業3"
+author: "孫浩哲 M072040002"
+date: "2019年6月4日"
+output: word_document
+---
+
+```{r}
+require(survival)
+require(KMsurv)
+require(dplyr)
+data(bmt)
+bmt$id=c(1:nrow(bmt))
+
+```
+
+##(ta)
+
+```{r}
+tadata=select(bmt,t2,ta,da,group,id,d1)
+mutate(tadata,start=ta,end=t2,event=da)->tadata ###新增start跟end
+tadata$start[which(tadata$event==0)]=0 ###將non-event 去除
+filter(tadata,event==0)->nonevent
+filter(tadata,event==1)->eventa
+event0=eventa 
+event0$event=0 ##拆成event=0跟event=1
+event0$start=0 ##重新設定start
+event0$end=event0$ta ##重新設定end
+rbind(event0,eventa,nonevent) %>% arrange(id)->Acompletedata ##合併並排序
+fa=coxph(Surv(start,end,d1)~factor(group)+ta,data=Acompletedata)
+summary(fa)
+```
+
+##(tc)
+
+```{r}
+tcdata=select(bmt,t2,tc,dc,group,id,d1)
+mutate(tcdata,start=tc,end=t2,event=dc)->tcdata
+tcdata$start[which(tcdata$event==0)]=0
+filter(tcdata,event==0)->noneventc
+filter(tcdata,event==1)->eventc
+event0c=eventc
+event0c$event=0
+event0c$start=0
+event0c$end=event0c$tc
+rbind(event0c,eventc,noneventc) %>% arrange(id)->Ccompletedata
+Ccompletedata=Ccompletedata[-which(Ccompletedata$start>Ccompletedata$end),]
+fc=coxph(Surv(start,end,d1)~factor(group)+tc,data=Ccompletedata)
+summary(fc)
+```
+
+##(tp)
+
+```{r}
+tpdata=select(bmt,t2,tp,dp,group,id,d1)
+mutate(tpdata,start=tp,end=t2,event=dp)->tpdata
+tpdata$start[which(tpdata$event==0)]=0
+filter(tpdata,event==0)->noneventp
+filter(tpdata,event==1)->eventp
+event0p=eventp
+event0p$event=0
+event0p$start=0
+event0p$end=event0p$tp
+rbind(event0p,eventp,noneventp) %>% arrange(id)->Pcompletedata
+Pcompletedata=Pcompletedata[-which(Pcompletedata$start==Pcompletedata$end),]
+fp=coxph(Surv(start,end,d1)~factor(group)+tp,data=Pcompletedata)
+summary(fp)
+```

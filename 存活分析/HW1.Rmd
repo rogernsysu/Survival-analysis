@@ -1,0 +1,73 @@
+---
+title: "Survival analysis HW 1"
+author: "孫浩哲 M072040002"
+date: "2019年3月26日"
+output: word_document
+---
+```{r}
+library(KMsurv)
+library(survival)
+library(ciTools)
+data(bfeed)
+{
+bfeed$white=0
+bfeed$white[which(bfeed$race==1)]=1
+bfeed$black=0
+bfeed$black[which(bfeed$race==2)]=1
+bfeed$other=0
+bfeed$other[which(bfeed$race==3)]=1
+}
+```
+
+```{r}
+#############
+model=survreg(Surv(duration)~poverty+yschool+white+black+other,data=bfeed,dist="weibull")
+```
+
+##第1題
+```{r}
+summary(model)
+```
+$$Y=\ln{X}=2.1093+0.1878\times poverty+0.0344\times yschool+0.2545\times white+0.1183\times black+1.03*W$$
+
+##第2題
+
+```{r}
+coef(model)
+```
+If mother's years of school increases one year,the mean log survival time will increases $0.0343$ weeks.
+
+##第3題
+
+```{r}
+summary(model)
+```
+The poverty has significant effect of breast feeding.
+
+##第4題
+
+The mother's education level has no significant effect of breast feeding.
+
+##第5題
+```{r}
+msu=add_ci(bfeed,model, alpha = 0.1, names = NULL, yhatName = "mean_pred")
+meansurvival=mean(msu$mean_pred)
+mediansurvival=median(msu$mean_pred)
+c(meansurvival,mediansurvival)
+```
+The mean of survival time is $16.16437$, and median of survival time is $16.29467$.
+
+##第6題
+
+```{r}
+red=survreg(Surv(duration)~poverty+yschool,data=bfeed,dist="weibull")
+anova(red,model)
+```
+The mother's race has no significant effect of breast feeding.
+
+##第7題
+
+```{r}
+confint(model)
+```
+The $95\%$ confidence interval for the regression coefficient for poverty is $[\ 0.0043,0.3713\ ]$
